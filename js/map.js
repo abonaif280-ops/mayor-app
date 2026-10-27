@@ -12,26 +12,30 @@ const MapUI = (() => {
 
   // ---------- البناء ----------
   function build(r) {
-    root = r; root.classList.add('m-split');
-    const segs = h('div', { class: 'segs' },
-      ['full|خريطة كاملة', 'split|خريطة + قائمة', 'list|قائمة فقط'].map(x => { const [k, l] = x.split('|'); return h('button', { class: 'seg', 'data-m': k, onclick: () => setMode(k) }, l); }));
+    root = r; root.classList.add('m-full');
     banner = h('div', { class: 'mbanner hidden' });
     const ctl = h('div', { class: 'mctl' },
       h('button', { class: 'rbtn', title: 'طبقة الخريطة', onclick: toggleBase }, icon('layers')),
       h('button', { class: 'rbtn', title: 'موقعي', onclick: locateMe }, icon('locate')),
-      h('button', { class: 'rbtn', title: 'حدود الأحياء', onclick: boundsManager }, icon('poly')));
+      h('button', { class: 'rbtn', title: 'حدود الأحياء', onclick: boundsManager }, icon('poly')),
+      h('button', { class: 'rbtn', title: 'قائمة البيوت', onclick: () => setMode(mode === 'full' ? 'split' : 'full') }, icon('list')),
+      h('button', { class: 'rbtn', title: 'ملء الشاشة', onclick: toggleFs }, icon('expand')));
     const fab = h('button', { class: 'fab', onclick: () => addHouse() }, icon('plus', 24), ' إضافة بيت');
-    root.append(h('div', { class: 'chips', id: 'chips' }), segs,
-      h('div', { class: 'mapwrap' }, h('div', { id: 'map' }), banner, ctl, fab),
+    const sres = h('div', { class: 'sres hidden' });
+    const sin = h('input', { class: 'msearch', type: 'search', placeholder: 'ابحث عن بيت: الاسم، الهوية، الجوال، العنوان', autocomplete: 'off', oninput: () => runSearch(sin, sres), onfocus: () => runSearch(sin, sres) });
+    root.append(
+      h('div', { class: 'mapwrap' }, h('div', { id: 'map' }), banner,
+        h('div', { class: 'mtop' }, h('div', { class: 'sbox2' }, icon('search', 20), sin, h('button', { class: 'sx', 'aria-label': 'مسح', onclick: () => { sin.value = ''; sres.classList.add('hidden'); sin.blur(); } }, '✕')), sres, h('div', { class: 'chips', id: 'chips' })),
+        ctl, fab),
       h('div', { class: 'maplist', id: 'maplist' }));
     map = L.map('map', { zoomControl: false, attributionControl: true }).setView([24.4672, 39.6111], 14);
-    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
     streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
     sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' });
     streets.addTo(map);
     boundLayer = L.layerGroup().addTo(map); markers = L.layerGroup().addTo(map); meLayer = L.layerGroup().addTo(map);
     map.on('click', onMapClick);
-    setMode('split'); renderBounds(); refresh();
+    setMode('full'); renderBounds(); refresh();
     // تحريك الخريطة لتشمل البيوت المسجلة
     fitAll();
   }
@@ -43,13 +47,29 @@ const MapUI = (() => {
   function show() { setTimeout(() => map && map.invalidateSize(), 60); }
   function setMode(m) {
     mode = m; root.classList.remove('m-full', 'm-split', 'm-list'); root.classList.add('m-' + m);
-    root.querySelectorAll('.seg').forEach(b => b.classList.toggle('on', b.dataset.m === m));
     setTimeout(() => map && map.invalidateSize(), 80);
   }
   function toggleBase() {
     if (curBase === 'streets') { map.removeLayer(streets); sat.addTo(map); curBase = 'sat'; toast('عرض الصور الجوية'); }
     else { map.removeLayer(sat); streets.addTo(map); curBase = 'streets'; toast('عرض الشوارع'); }
   }
+
+  function toggleFs() {
+    const on = document.body.classList.toggle('mapfs');
+    toast(on ? 'ملء الشاشة. اضغط الزر نفسه للرجوع' : 'عادت القوائم'); setTimeout(() => map && map.invalidateSize(), 120);
+  }
+  function runSearch(inp, box) {
+    const t = arDigits(inp.value.trim()).toLowerCase(); box.innerHTML = '';
+    if (!t) { box.classList.add('hidden'); return; }
+    const m = v => arDigits(v || '').toLowerCase().includes(t);
+    const arr = S.houses.filter(x => [x.owner, x.nid, x.phone, x.meter, x.address, x.notes, ...(x.tags || []), ...(x.apts || []).flatMap(a => [a.name, a.phone, a.no])].some(m)).slice(0, 8);
+    box.classList.remove('hidden');
+    if (!arr.length) { box.append(h('div', { class: 'empty sm' }, 'لا توجد نتائج')); return; }
+    arr.forEach(x => box.append(h('button', { class: 'li', onclick: () => { box.classList.add('hidden'); inp.blur(); focusOnMap(x); } },
+      h('i', { class: 'dot big', style: { background: hasNotes(x) ? RED : GREEN } }),
+      h('div', { class: 'li-t' }, h('b', {}, houseTitle(x)), h('small', {}, [x.nid, x.phone, x.address].filter(Boolean).join(' • ') || '—')))));
+  }
+  function focusOnMap(hs) { map.invalidateSize(); map.setView([hs.lat, hs.lng], Math.max(map.getZoom(), 18)); openHouse(hs.id); }
 
   // ---------- الدبابيس والقائمة ----------
   const visible = hs => { const f = S.filter; if (f === 'all') return true; if (f === 'notes') return hasNotes(hs); if (f === 'data') return !hasNotes(hs); return (hs.tags || []).includes(f); };

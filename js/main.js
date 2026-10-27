@@ -56,7 +56,7 @@ const App = (() => {
     updateBanner(); updateNavBadge();
   }
   function go(t) {
-    S.tab = t;
+    S.tab = t; const shell = $('.shell'); if (shell) shell.classList.toggle('tab-map', t === 'map');
     VIEWS.forEach(k => views[k].classList.toggle('hidden', k !== t));
     document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.t === (t === 'search' ? 'home' : t)));
     if (t === 'home') Home.render(); else if (t === 'map') MapUI.show(); else if (t === 'req') Requests.render(); else if (t === 'rep') Reports.render(); else if (t === 'search') renderSearch(); else if (t === 'set') Settings.render();

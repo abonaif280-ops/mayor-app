@@ -59,7 +59,7 @@ const Docx = (() => {
     const kv = (k, v) => para(run(k + ': ', { sz: szH, font, b: true }) + run(v, { sz: szH, font }), { after: 40 });
     const leftLines = kv('التاريخ', fmtISO(r.date, s.calendar) + suffix) + kv('الرقم', r.no || '') + kv('الموضوع', r.subject || '') + kv('المشفعات', r.attachments || 'لا يوجد');
     const header = `<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="9906" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="3300"/><w:gridCol w:w="3306"/><w:gridCol w:w="3300"/></w:tblGrid><w:tr>${cell(3300, rightLines)}${cell(3306, logoXml)}${cell(3300, leftLines)}</w:tr></w:tbl>`;
-    const title = para(run({ review: 'محضر إبلاغ بمراجعة', attend: 'محضر إبلاغ بالحضور', case: 'محضر إبلاغ عن حالة' }[r.kind] || 'محضر', { sz: szT, font, b: true }), { jc: 'center', before: 240, after: 200 });
+    const title = para(run(Reports.titleOf(r), { sz: szT, font, b: true }), { jc: 'center', before: 240, after: 200 });
     const body = String(r.body || '').split('\n').filter(x => x.trim()).map(t => para(run(t, { sz, font }), { jc: 'both', after: 120, line: 360 })).join('');
     const sigBlock = para(run('عمدة حي ' + (s.district || '.....'), { sz, font, b: true }), { jc: 'right', before: 240 }) + para(run(s.mayorName || '.....', { sz, font }), { jc: 'right' }) + sigXml;
 

@@ -1,6 +1,6 @@
 // ============ الطلبات الواردة من مراكز الشرطة ============
-const KINDS = [['review', 'إبلاغ بالمراجعة'], ['attend', 'إبلاغ بالحضور'], ['case', 'إبلاغ عن حالة']];
-const kindLabel = k => (KINDS.find(x => x[0] === k) || KINDS[0])[1];
+const KINDS = [['review', 'إبلاغ بالمراجعة'], ['case', 'إبلاغ عن حالة']];
+const kindLabel = k => (KINDS.find(x => x[0] === (k === 'attend' ? 'review' : k)) || KINDS[0])[1];
 
 // فهرس الأشخاص من سجل البيوت (للتعبئة السريعة)
 function peopleIndex() {

@@ -1,7 +1,9 @@
 // ============ المحاضر: الإعداد والمعاينة والطباعة وWord والمشاركة ============
 const Reports = (() => {
   const RESULTS = [['personal', 'تم إبلاغه شخصيًا'], ['phone', 'تم إبلاغه هاتفيًا'], ['unreached', 'تعذّر الوصول إليه'], ['refused', 'رفض الاستلام'], ['moved', 'غير مقيم بالحي']];
-  const TITLES = { review: 'محضر إبلاغ بمراجعة', attend: 'محضر إبلاغ بالحضور', case: 'محضر إبلاغ عن حالة' };
+  const TITLES = { review: 'محضر إبلاغ بالمراجعة', case: 'محضر إبلاغ عن حالة' };
+  // عنوان المحضر دائمًا: نوع المحضر + بتاريخ اليوم
+  const titleOf = r => (TITLES[r.kind === 'attend' ? 'review' : r.kind] || 'محضر') + ' بتاريخ ' + fmtISO(r.date) + calSuffix();
   let root, filter = 'all';
   const calSuffix = () => S.settings.calendar === 'hijri' ? ' هـ' : ' م';
 
@@ -23,20 +25,19 @@ const Reports = (() => {
   }
   function chooser() {
     const sh = openSheet('اختر نوع المحضر');
-    KINDS.forEach(([k, l]) => sh.body.append(h('button', { class: 'bigbtn', onclick: () => { sh.close(); open_(null, { kind: k }); } }, h('b', {}, l), h('small', {}, TITLES[k]))));
+    KINDS.forEach(([k, l]) => sh.body.append(h('button', { class: 'bigbtn', onclick: () => { sh.close(); open_(null, { kind: k }); } }, h('b', {}, l), h('small', {}, TITLES[k] + ' بتاريخ اليوم'))));
   }
 
   // ---------- الصياغة التلقائية ----------
   function genSubject(r) {
     const w = r.person || '.....', c = r.center || 'المركز';
     if (r.kind === 'review') return 'إبلاغ المدعو / ' + w + ' بمراجعة ' + c;
-    if (r.kind === 'attend') return 'إبلاغ المدعو / ' + w + ' بالحضور إلى ' + c;
     return 'إبلاغ عن حالة' + (r.person ? ' — ' + r.person : '');
   }
   function genBody(r) {
     const s = S.settings, w = r.person || '.....', nid = r.nid ? ' (هوية رقم ' + r.nid + ')' : '', c = r.center || 'المركز';
     const lt = r.letterNo ? 'رقم (' + r.letterNo + ')' : '', ld = r.letterDate ? ' وتاريخ (' + r.letterDate + ')' : '';
-    const act = r.kind === 'review' ? 'بمراجعة ' + c : r.kind === 'attend' ? 'بالحضور إلى ' + c : '';
+    const act = r.kind === 'review' ? 'بمراجعة ' + c : '';
     const p1 = r.kind === 'case'
       ? 'بناءً على خطاب ' + c + ' ' + lt + ld + ' بشأن الحالة الخاصة بالمدعو / ' + w + nid + '،'
       : 'بناءً على خطاب ' + c + ' ' + lt + ld + ' بشأن إبلاغ المدعو / ' + w + nid + ' ' + act + '،';
@@ -74,7 +75,7 @@ const Reports = (() => {
           h('div', { class: 'hr' }, ['المملكة العربية السعودية', 'وزارة الداخلية', 'الأمن العام', s.region, s.center].filter(Boolean).map(t => h('div', {}, t))),
           h('div', { class: 'hlogo' }, s.logo ? h('img', { src: s.logo }) : h('div', { class: 'nologo noprint' }, 'الشعار')),
           h('div', { class: 'hl' }, line('التاريخ', fmtISO(r.date) + calSuffix()), line('الرقم', r.no || '—'), line('الموضوع', r.subject || ''), line('المشفعات', r.attachments || 'لا يوجد'))),
-        h('div', { class: 'ttl' }, TITLES[r.kind] || 'محضر'),
+        h('div', { class: 'ttl' }, titleOf(r)),
         h('div', { class: 'bodytxt' }, r.body || ''),
         h('div', { class: 'spacer' }),
         h('div', { class: 'sigblk' }, h('div', {}, 'عمدة حي ' + (s.district || '.....')), h('div', { class: 'nm' }, s.mayorName || '.....'), sigImg)));
@@ -200,5 +201,5 @@ const Reports = (() => {
   }
   function newFor(hs) { open_(null, { kind: 'review', person: hs.owner, nid: hs.nid || '', phone: hs.phone || '', houseId: hs.id }); }
 
-  return { build, render, open: open_, fromRequest, newFor, kindLabel, chooser };
+  return { build, render, open: open_, fromRequest, newFor, kindLabel, chooser, titleOf };
 })();

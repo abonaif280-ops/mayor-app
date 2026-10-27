@@ -48,6 +48,8 @@ const ICONS = {
   back: '<path d="m9 5 7 7-7 7"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
   edit: '<path d="m4 20 4-1 11-11-3-3L5 16zM14 6l3 3"/>',
+  expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
   home: '<path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   chart: '<path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/>',
 };
@@ -264,7 +266,11 @@ const signatureFromFile = async file => recolorBlue(await normalizePng(file, 700
 function hashPin(p) { let a = 0xdeadbeef, b = 0x41c6ce57; for (let i = 0; i < p.length; i++) { const ch = p.charCodeAt(i); a = Math.imul(a ^ ch, 2654435761); b = Math.imul(b ^ ch, 1597334677); } a = Math.imul(a ^ (a >>> 16), 2246822507) ^ Math.imul(b ^ (b >>> 13), 3266489909); b = Math.imul(b ^ (b >>> 16), 2246822507) ^ Math.imul(a ^ (a >>> 13), 3266489909); return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36) + ':mayor'; }
 async function loadSettings() { const s = await DB.getKV('settings'); S.settings = { ...DEFAULTS, tags: DEFAULT_TAGS.slice(), ...(s || {}) }; }
 const saveSettings = () => DB.setKV('settings', S.settings);
-async function loadAll() { S.houses = await DB.all('houses'); S.requests = await DB.all('requests'); S.reports = await DB.all('reports'); S.bounds = await DB.all('bounds'); }
+async function loadAll() {
+  S.houses = await DB.all('houses'); S.requests = await DB.all('requests'); S.reports = await DB.all('reports'); S.bounds = await DB.all('bounds');
+  // «إبلاغ بالحضور» دُمج مع «إبلاغ بالمراجعة»
+  for (const x of S.requests) if (x.kind === 'attend') x.kind = 'review'; for (const x of S.reports) if (x.kind === 'attend') x.kind = 'review';
+}
 async function putRec(store, arr, rec) { await DB.put(store, rec); const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec); }
 async function delRec(store, arr, id) { await DB.del(store, id); const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1); }
 function applyPrefs() {

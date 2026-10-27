@@ -211,3 +211,20 @@ textarea.in{resize:vertical}
 .drep .pfoot{position:absolute;bottom:6mm;inset-inline:13mm;display:flex;justify-content:space-between;font-size:9pt;color:#555;border-top:1px solid #bbb;padding-top:1.5mm}
 @media print{#printRoot .a4.drep{break-after:page;page-break-after:always}#printRoot .a4.drep:last-child{break-after:auto;page-break-after:auto}}
 .dprev{margin-bottom:12px}
+
+/* الخريطة بملء الشاشة */
+.shell.tab-map .top,.shell.tab-map #topbanner{display:none}
+body.mapfs .shell.tab-map .nav{display:none}
+.mtop{position:absolute;top:calc(8px + env(safe-area-inset-top));inset-inline-start:10px;inset-inline-end:68px;z-index:500}
+.sbox2{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:0 10px;min-height:50px;color:var(--mut)}
+.msearch{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:1rem;min-height:46px;color:var(--ink);outline:none}
+.sbox2 .sx{border:0;background:none;color:var(--mut);font-size:1rem;width:32px;height:32px}
+.sres{background:var(--card);border:1.5px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-top:6px;max-height:44vh;overflow:auto}
+.sres .empty.sm{padding:14px}
+.mtop .chips{padding:8px 0 0}
+.mtop .chip{box-shadow:var(--shadow)}
+.mapwrap.busy .mtop{display:none}
+.mctl{top:calc(8px + env(safe-area-inset-top))}
+.mbanner{top:calc(8px + env(safe-area-inset-top))}
+.msearch::-webkit-search-cancel-button,.msearch::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
+.mapwrap .leaflet-bottom.leaflet-right{margin-bottom:6px}
