@@ -16,7 +16,8 @@ const Home = (() => {
     const stat = (n, label, cls, go) => h('button', { class: 'stat ' + (cls || ''), onclick: go }, h('b', {}, n), h('span', {}, label));
     const tile = (ic, title, sub, go, badge, cls) => h('button', { class: 'tile ' + (cls || ''), onclick: go }, h('span', { class: 'tico' }, icon(ic, 34)), h('b', {}, title), h('small', {}, sub), badge ? h('i', { class: 'tbadge' }, badge) : null);
     root.append(
-      h('div', { class: 'hello' }, h('b', {}, s.mayorName ? 'أهلًا ' + s.mayorName : 'أهلًا بك'), h('small', {}, s.district ? 'عمدة حي ' + s.district : 'عمدة الحي')),
+      h('div', { class: 'hello' }, h('b', {}, s.mayorName ? 'أهلًا ' + s.mayorName : 'أهلًا بك'), h('small', {}, s.district ? 'عمدة حي ' + s.district : 'مساعد العمدة')),
+      Install.card(),
       h('div', { class: 'stats' },
         stat(S.houses.length, 'بيت مسجل', '', () => switchTab('map')),
         stat(nNotes, 'فيه ملاحظات', nNotes ? 'red' : '', () => { S.filter = 'notes'; switchTab('map'); MapUI.refresh(); }),

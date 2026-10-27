@@ -18,7 +18,7 @@ function lockScreen(onOk) {
   const key = e => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') press('del'); };
   document.addEventListener('keydown', key);
   const pad = h('div', { class: 'ppad' }, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => h('button', { onclick: () => press(String(n)) }, n)), h('span', {}), h('button', { onclick: () => press('0') }, '0'), h('button', { onclick: () => press('del') }, '⌫'));
-  ov.append(h('div', { class: 'lockbox' }, h('div', { class: 'lockico' }, icon('pin', 40)), h('h2', {}, 'عمدة الحي'), h('p', { class: 'mut' }, S.settings.district ? 'حي ' + S.settings.district : ''), dots, msg, pad,
+  ov.append(h('div', { class: 'lockbox' }, h('div', { class: 'lockico' }, icon('pin', 40)), h('h2', {}, 'مساعد العمدةي'), h('p', { class: 'mut' }, S.settings.district ? 'حي ' + S.settings.district : ''), dots, msg, pad,
     h('button', { class: 'lnk', onclick: forgotPin }, 'نسيت الرمز؟')));
   document.body.append(ov);
 }
@@ -105,7 +105,7 @@ const Settings = (() => {
           : [h('p', { class: 'mut' }, Cloud.statusText() || 'مفعّلة'),
              h('div', { class: 'btnrow' }, h('button', { class: 'btn pri', onclick: async () => { if (Cloud.ready()) { await Cloud.sync(true); render(); } else Cloud.connectSheet(render); } }, Cloud.ready() ? 'مزامنة الآن' : 'استئناف'), h('button', { class: 'btn ghost', onclick: () => Cloud.disconnect(render) }, 'إيقاف')),
              h('button', { class: 'btn danger ghost block', onclick: () => Cloud.deleteRemote(render) }, 'حذف النسخة السحابية')]));
-    root.append(card('عن البرنامج', h('p', { class: 'mut' }, 'عمدة الحي — الإصدار التجريبي 1.0'), h('button', { class: 'btn danger ghost block', onclick: resetAll }, 'إعادة ضبط البرنامج (حذف كل البيانات)')));
+    root.append(card('عن البرنامج', h('p', { class: 'mut' }, 'مساعد العمدة — الإصدار التجريبي 1.0'), h('button', { class: 'btn danger ghost block', onclick: resetAll }, 'إعادة ضبط البرنامج (حذف كل البيانات)')));
   }
   function signSheet() {
     const sh = openSheet('وقّع بإصبعك'); const p = sigPad(); sh.body.append(p.el);

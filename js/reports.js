@@ -3,6 +3,8 @@ const Reports = (() => {
   const RESULTS = [['personal', 'تم إبلاغه شخصيًا'], ['phone', 'تم إبلاغه هاتفيًا'], ['unreached', 'تعذّر الوصول إليه'], ['refused', 'رفض الاستلام'], ['moved', 'غير مقيم بالحي']];
   const TITLES = { review: 'محضر إبلاغ بالمراجعة', case: 'محضر إبلاغ عن حالة' };
   // عنوان المحضر دائمًا: نوع المحضر + بتاريخ اليوم
+  // اسم الملف: نوع الإجراء - اسم صاحب المحضر - التاريخ (للبحث السهل لاحقًا)
+  const fileBase = r => [kindLabel(r.kind), (r.person || r.subject || '').trim().slice(0, 40), r.date].filter(Boolean).join(' - ').replace(/[\\/:*?"<>|\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
   const titleOf = r => (TITLES[r.kind === 'attend' ? 'review' : r.kind] || 'محضر') + ' بتاريخ ' + fmtISO(r.date) + calSuffix();
   let root, filter = 'all';
   const calSuffix = () => S.settings.calendar === 'hijri' ? ' هـ' : ' م';
@@ -176,9 +178,9 @@ const Reports = (() => {
     const doPrint = async () => {
       if (!(await save(true))) return; const pr = $('#printRoot'); pr.innerHTML = ''; const page = pageEl(r); pr.append(page); await fontsReady(); const f = fitPage(page);
       if (f.overflow) toast('النص طويل، اختصره ليتسع في صفحة واحدة'); toast('اختر «حفظ كملف PDF» من نافذة الطباعة للحصول على PDF', 4500);
-      const clear = () => { pr.innerHTML = ''; window.removeEventListener('afterprint', clear); }; window.addEventListener('afterprint', clear); setTimeout(() => window.print(), 250);
+      const clear = () => { pr.innerHTML = ''; window.removeEventListener('afterprint', clear); }; window.addEventListener('afterprint', clear); const oldT = document.title; document.title = fileBase(r); window.addEventListener('afterprint', () => { document.title = oldT; }, { once: true }); setTimeout(() => window.print(), 250);
     };
-    const mkWord = async () => { if (!(await save(true))) return null; const f = await fitSize(); const blob = await Docx.build(r, S.settings, Math.max(11, Math.floor(f.size) - 1)); return { blob, name: 'محضر-' + r.no.replace('/', '-') + '.docx' }; };
+    const mkWord = async () => { if (!(await save(true))) return null; const f = await fitSize(); const blob = await Docx.build(r, S.settings, Math.max(11, Math.floor(f.size) - 1)); return { blob, name: fileBase(r) + '.docx' }; };
     const doWord = async () => { try { const w = await mkWord(); if (w) { downloadBlob(w.blob, w.name); toast('تم تجهيز ملف Word'); } } catch (e) { console.error(e); toast('تعذر إنشاء ملف Word'); } };
     const doShare = async () => { try { const w = await mkWord(); if (w) await shareFile(w.blob, w.name, 'محضر ' + r.no); } catch (e) { console.error(e); toast('تعذرت المشاركة'); } };
 
@@ -201,5 +203,5 @@ const Reports = (() => {
   }
   function newFor(hs) { open_(null, { kind: 'review', person: hs.owner, nid: hs.nid || '', phone: hs.phone || '', houseId: hs.id }); }
 
-  return { build, render, open: open_, fromRequest, newFor, kindLabel, chooser, titleOf };
+  return { build, render, open: open_, fromRequest, newFor, kindLabel, chooser, titleOf, fileBase };
 })();

@@ -27,7 +27,7 @@ const Backup = (() => {
       const data = await snapshot(withImages), blob = new Blob([JSON.stringify(data)], { type: 'application/json' }), name = 'mayor-backup-' + todayISO() + '.json';
       const f = new File([blob], name, { type: 'application/json' });
       if (navigator.canShare && navigator.canShare({ files: [f] })) {
-        try { await navigator.share({ files: [f], title: 'نسخة احتياطية - عمدة الحي' }); await mark(); toast('تم حفظ النسخة. اختر «حفظ في الملفات» لتبقى عندك'); return true; }
+        try { await navigator.share({ files: [f], title: 'نسخة احتياطية - مساعد العمدة' }); await mark(); toast('تم حفظ النسخة. اختر «حفظ في الملفات» لتبقى عندك'); return true; }
         catch (e) { if (e && e.name === 'AbortError') { toast('أُلغي حفظ النسخة'); return false; } }
       }
       downloadBlob(blob, name); await mark(); toast('تم تنزيل ملف النسخة الاحتياطية'); return true;

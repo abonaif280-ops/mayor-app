@@ -44,7 +44,7 @@ const App = (() => {
     await loadAll(); applyPrefs(); dismissed = false;
     const app = $('#app'); app.innerHTML = '';
     const cyc = async () => { const o = ['light', 'sun', 'night']; S.settings.theme = o[(o.indexOf(S.settings.theme) + 1) % 3]; applyPrefs(); await saveSettings(); toast({ light: 'الوضع العادي', sun: 'وضع الشمس (تباين عالٍ)', night: 'الوضع الليلي' }[S.settings.theme]); };
-    const top = h('header', { class: 'top' }, h('div', { class: 'tt' }, h('b', {}, 'عمدة الحي'), h('small', {}, S.settings.district ? 'حي ' + S.settings.district : '')),
+    const top = h('header', { class: 'top' }, h('div', { class: 'tt' }, h('b', {}, 'مساعد العمدة'), h('small', {}, S.settings.district ? 'حي ' + S.settings.district : '')),
       h('div', { class: 'tact' }, h('button', { class: 'rbtn sm', title: 'وضع الشمس / الليل', onclick: cyc }, '☀'), h('button', { class: 'rbtn sm', title: 'قفل البرنامج', onclick: () => lockScreen() }, '🔒')));
     banner = h('div', { id: 'topbanner', class: 'hidden' });
     const main = h('main', { class: 'views' });
@@ -52,7 +52,7 @@ const App = (() => {
     const nav = h('nav', { class: 'nav' }, NAV.map(([k, l, ic]) => h('button', { 'data-t': k, onclick: () => switchTab(k) }, icon(ic, 24), h('span', {}, l), k === 'req' ? h('i', { class: 'nbadge hidden', id: 'nb-req' }) : null)));
     app.append(h('div', { class: 'shell' }, top, banner, main, nav));
     Requests.build(views.req); Reports.build(views.rep); Settings.build(views.set); Home.build(views.home);
-    switchTab('map'); MapUI.build(views.map); MapUI.show(); switchTab('home');
+    switchTab('map'); MapUI.build(views.map); MapUI.show(); switchTab('home'); Install.firstTime();
     updateBanner(); updateNavBadge();
   }
   function go(t) {
