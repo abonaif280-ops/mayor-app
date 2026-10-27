@@ -1,5 +1,5 @@
 // يعمل فقط عند الاستضافة على رابط آمن (https). يخزّن ملفات البرنامج ليفتح بدون إنترنت.
-const V = 'mayor-v6';
+const V = 'mayor-v7';
 const FILES = ['./','index.html','manifest.webmanifest','css/style.css','css/fonts.css',
   'js/db.js','js/core.js','js/docx.js','js/map.js','js/requests.js','js/reports.js','js/district.js','js/home.js','js/install.js','js/config.js','js/backup.js','js/cloud.js','js/settings.js','js/main.js',
   'lib/leaflet/leaflet.js','lib/leaflet/leaflet.css','lib/jszip.min.js',

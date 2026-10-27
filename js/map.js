@@ -3,7 +3,7 @@ const MapUI = (() => {
   const RED = '#d92d3a', GREEN = '#1f9d55';
   const FLOORS = ['الأرضي', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر', 'الحادي عشر', 'الثاني عشر'];
   const PALETTE = ['#2563eb', '#9333ea', '#ea580c', '#0d9488', '#db2777', '#4b5563'];
-  let root, map, markers, boundLayer, streets, sat, curBase = 'streets', meLayer, tempMarker, picking = null, drawing = null, mode = 'split', banner;
+  let root, map, markers, boundLayer, streets, sat, curBase = 'streets', meLayer, tempMarker, picking = null, moving = null, drawing = null, mode = 'split', banner;
 
   const pinIcon = c => L.divIcon({
     className: 'pin-wrap', iconSize: [34, 44], iconAnchor: [17, 43],
@@ -76,8 +76,9 @@ const MapUI = (() => {
   function refresh() {
     markers.clearLayers();
     S.houses.filter(visible).forEach(hs => {
+      if (moving && moving.id === hs.id) return;
       const m = L.marker([hs.lat, hs.lng], { icon: pinIcon(hasNotes(hs) ? RED : GREEN), title: houseTitle(hs) });
-      m.on('click', () => { if (!picking && !drawing) openHouse(hs.id); });
+      m.on('click', () => { if (!picking && !drawing && !moving) openHouse(hs.id); });
       markers.addLayer(m);
     });
     renderChips(); renderList();
@@ -133,14 +134,36 @@ const MapUI = (() => {
     tempMarker = L.marker([ll.lat, ll.lng], { icon: pinIcon('#2563eb') }).addTo(map);
     cb({ lat: +ll.lat.toFixed(6), lng: +ll.lng.toFixed(6) });
   }
+  // ---------- سحب علامة البيت لتعديل موقعه ----------
+  const fmtLL = (a, b) => (+a).toFixed(6) + ', ' + (+b).toFixed(6);
+  function moveHouse(hs) {
+    cancelAll(); switchTab('map'); if (mode === 'list') setMode('split'); else show();
+    moving = { id: hs.id, lat: hs.lat, lng: hs.lng }; refresh();
+    const coord = h('b', { class: 'mvc', dir: 'ltr' }, fmtLL(hs.lat, hs.lng));
+    moving.coord = coord;
+    tempMarker = L.marker([hs.lat, hs.lng], { icon: pinIcon('#2563eb'), draggable: true, autoPan: true, zIndexOffset: 1000 }).addTo(map);
+    tempMarker.on('drag', e => { const p = e.target.getLatLng(); if (moving) { moving.lat = p.lat; moving.lng = p.lng; coord.textContent = fmtLL(p.lat, p.lng); } });
+    tempMarker.on('dragend', e => { const p = e.target.getLatLng(); if (moving) { moving.lat = p.lat; moving.lng = p.lng; coord.textContent = fmtLL(p.lat, p.lng); } });
+    showBanner(h('span', {}, 'اسحب الدبوس الأزرق إلى مكان البيت (أو اضغط على الخريطة) ', coord),
+      [h('button', { class: 'btn sm pri', onclick: async () => {
+        const m = moving; if (!m) return; hs.lat = +m.lat.toFixed(6); hs.lng = +m.lng.toFixed(6); hs.updated = Date.now();
+        await putRec('houses', S.houses, hs); moving = null; clearTemp(); hideBanner(); refresh(); toast('تم حفظ الموقع الجديد'); openHouse(hs.id);
+      } }, 'حفظ الموقع'),
+      h('button', { class: 'btn sm', onclick: async () => { try { const c = await getPos(); movePut({ lat: c.latitude, lng: c.longitude }); map.setView([c.latitude, c.longitude], 19); } catch (e) { toast(gpsError(e), 6000); } } }, 'موقعي'),
+      h('button', { class: 'btn sm ghost', onclick: () => { cancelAll(); openHouse(hs.id); } }, 'إلغاء')]);
+    map.setView([hs.lat, hs.lng], Math.max(map.getZoom(), 19));
+  }
+  function movePut(ll) { if (!moving || !tempMarker) return; tempMarker.setLatLng([ll.lat, ll.lng]); moving.lat = ll.lat; moving.lng = ll.lng; moving.coord.textContent = fmtLL(ll.lat, ll.lng); }
   function clearTemp() { if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; } }
   function cancelAll() {
+    if (moving) { moving = null; refresh(); }
     picking = null; if (drawing) { map.removeLayer(drawing.group); drawing = null; }
     hideBanner(); clearTemp(); map.getContainer().classList.remove('picking');
   }
   function onMapClick(e) {
     if (drawing) { addVertex(e.latlng); return; }
     if (picking) place(e.latlng);
+    else if (moving) movePut(e.latlng);
   }
 
   // ---------- تحديد الموقع (GPS) ----------
@@ -204,7 +227,7 @@ const MapUI = (() => {
       h('div', { class: 'li-t' }, h('b', {}, (r.no || '') + ' — ' + Reports.kindLabel(r.kind)), h('small', {}, fmtISO(r.date) + ' • ' + (r.person || ''))))));
     if (reqs.length) b.append(h('p', { class: 'mut' }, 'طلبات مرتبطة: ' + reqs.length));
     b.append(h('div', { class: 'btnrow' },
-      h('button', { class: 'btn ghost', onclick: () => { sh.close(); startPick(ll => { hs.lat = ll.lat; hs.lng = ll.lng; hs.updated = Date.now(); putRec('houses', S.houses, hs).then(() => { clearTemp(); refresh(); toast('تم تغيير الموقع'); openHouse(hs.id); }); }, 'اضغط على الخريطة في الموقع الجديد للبيت'); } }, 'تغيير الموقع'),
+      h('button', { class: 'btn ghost', onclick: () => { sh.close(); moveHouse(hs); } }, 'تحريك الموقع على الخريطة'),
       h('button', { class: 'btn danger ghost', onclick: async () => { if (await confirmBox('حذف بيانات هذا البيت نهائيًا؟', 'حذف', true)) { for (const p of hs.photos || []) await delImg(p); await delRec('houses', S.houses, hs.id); sh.close(); refresh(); toast('تم الحذف'); } } }, 'حذف')));
     sh.foot.append(h('button', { class: 'btn ghost', onclick: () => { sh.close(); Reports.newFor(hs); } }, 'محضر لهذا البيت'),
       h('button', { class: 'btn pri', onclick: () => { sh.close(); openForm(hs, false); } }, icon('edit', 20), ' تعديل'));
