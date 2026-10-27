@@ -6,12 +6,12 @@ const App = (() => {
 
   function updateBanner() {
     if (!banner) return; banner.innerHTML = ''; banner.classList.add('hidden'); if (dismissed) return;
-    const n = S.houses.length + S.requests.length + S.reports.length; let msg = '';
-    if (S.settings.pin === hashPin(DEFAULT_PIN)) msg = 'تنبيه: ما زلت تستخدم رمز الدخول الافتراضي. غيّره من الإعدادات.';
-    else if (n && Settings.backupAge() >= 14) msg = 'مضى ' + Settings.backupAge() + ' يومًا على آخر نسخة احتياطية. خذ نسخة الآن.';
+    let msg = '', btn = null;
+    if (S.settings.pin === hashPin(DEFAULT_PIN)) { msg = 'تنبيه: ما زلت تستخدم رمز الدخول الافتراضي. غيّره من الإعدادات.'; btn = ['الإعدادات', () => switchTab('set')]; }
+    else if (Backup.due()) { const p = Backup.pending(); msg = p ? 'لديك ' + p + ' تعديل لم يُحفظ في نسخة احتياطية.' : 'مضى وقت على آخر نسخة احتياطية.'; btn = ['احفظ نسخة', async () => { if (await Backup.quickSave(true)) updateBanner(); }]; }
     if (!msg) return;
     banner.classList.remove('hidden');
-    banner.append(h('span', {}, msg), h('button', { class: 'btn sm pri', onclick: () => switchTab('set') }, 'الإعدادات'), h('button', { class: 'x', onclick: () => { dismissed = true; updateBanner(); } }, '✕'));
+    banner.append(h('span', {}, msg), h('button', { class: 'btn sm pri', onclick: btn[1] }, btn[0]), h('button', { class: 'x', onclick: () => { dismissed = true; updateBanner(); } }, '✕'));
   }
   function updateNavBadge() {
     const late = S.requests.filter(r => r.status !== 'تم الرد' && r.received && (Date.now() - new Date(r.received + 'T00:00:00').getTime()) / 86400000 >= 3).length;

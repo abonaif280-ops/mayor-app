@@ -68,7 +68,6 @@ const Settings = (() => {
   const card = (title, ...kids) => h('section', { class: 'scard' }, h('h3', {}, title), ...kids);
   const imgBox = (src, empty) => src ? h('img', { class: 'previmg', src }) : h('div', { class: 'mut' }, empty);
 
-  function backupAge() { const t = S.settings.lastBackup || S.settings.firstUse; return t ? daysSince(t) : 0; }
   function render() {
     root.innerHTML = ''; const s = S.settings;
     root.append(h('div', { class: 'vhead' }, h('h2', {}, 'الإعدادات')));
@@ -90,12 +89,22 @@ const Settings = (() => {
     root.append(card('ترقيم المحاضر والتاريخ',
       field('نوع التقويم', sel(s, 'calendar', [['gregorian', 'ميلادي'], ['hijri', 'هجري']], { on: () => { persist(); } })),
       field('رقم أول محضر في السنة', tx(s, 'startNo', { type: 'number', mode: 'numeric', on: persist }), 'مثال: ابدأ من 1 فيصبح الرقم 001/' + (S.settings.calendar === 'hijri' ? '1448' : new Date().getFullYear()))));
-    const age = backupAge(), n = S.houses.length + S.requests.length + S.reports.length;
+    const pend = Backup.pending(), lb = S.settings.lastBackup;
     root.append(card('النسخ الاحتياطي',
-      h('p', { class: 'mut' }, 'بياناتك محفوظة في هذا الجهاز فقط. إن مُسح المتصفح أو تغيّر الجهاز تضيع إن لم تكن لديك نسخة. ' + (S.settings.lastBackup ? 'آخر نسخة: ' + fmtDate(S.settings.lastBackup) + ' (قبل ' + age + ' يومًا).' : 'لم تأخذ نسخة بعد.')),
-      age >= 14 && n ? h('div', { class: 'warn' }, 'مضى ' + age + ' يومًا على آخر نسخة احتياطية. خذ نسخة الآن.') : null,
-      h('div', { class: 'btnrow' }, h('button', { class: 'btn pri', onclick: () => backup(true, false) }, 'نسخة كاملة (مع الصور)'), h('button', { class: 'btn ghost', onclick: () => backup(false, false) }, 'نسخة بدون صور')),
-      h('div', { class: 'btnrow' }, h('button', { class: 'btn ghost', onclick: () => backup(true, true) }, icon('share', 18), ' إرسال النسخة (واتساب/ملفات)'), h('button', { class: 'btn ghost', onclick: restore }, 'استعادة من ملف'))));
+      h('p', { class: 'mut' }, 'بياناتك محفوظة في هذا الجهاز وفي هذا المتصفح فقط. ' + (lb ? 'آخر نسخة: ' + fmtDate(lb) + ' (قبل ' + Backup.age() + ' يومًا).' : 'لم تأخذ نسخة بعد.') + (pend ? ' لديك ' + pend + ' تعديل لم يُحفظ بعد.' : '')),
+      Backup.due() ? h('div', { class: 'warn' }, 'حان وقت نسخة احتياطية جديدة.') : null,
+      h('button', { class: 'btn pri block', onclick: async () => { await Backup.quickSave(true); render(); } }, icon('share', 18), ' حفظ نسخة احتياطية الآن'),
+      h('small', { class: 'bhint' }, 'تظهر نافذة المشاركة: اختر «حفظ في الملفات» ثم iCloud Drive، فتبقى النسخة عندك ولو تغيّر المتصفح أو الجوال. وللنقل إلى متصفح آخر افتح البرنامج فيه واختر «استعادة من ملف».'),
+      h('div', { class: 'btnrow' }, h('button', { class: 'btn ghost', onclick: () => Backup.quickSave(false) }, 'نسخة بدون صور'), h('button', { class: 'btn ghost', onclick: async () => { await Backup.restoreFile(); render(); } }, 'استعادة من ملف'))));
+    const cl = S.settings.cloud || {};
+    root.append(card('المزامنة السحابية (اختيارية)',
+      !Cloud.available()
+        ? [h('p', { class: 'mut' }, 'غير مفعّلة حاليًا. تحتاج معرّف عميل Google يضعه مسؤول البرنامج مرة واحدة، فتظهر عندها أزرار الربط.'), field('معرّف عميل Google (للمسؤول)', tx(s, 'googleClientId', { ph: 'xxxx.apps.googleusercontent.com', on: persist }))]
+        : !Cloud.active()
+          ? [h('p', { class: 'mut' }, 'تنقل بياناتك بين الجوالات والمتصفحات عبر نسخة مشفّرة في حسابك على Google Drive. اختيارية، والبرنامج يعمل بدونها.'), h('button', { class: 'btn pri block', onclick: () => Cloud.connectSheet(render) }, 'ربط Google Drive')]
+          : [h('p', { class: 'mut' }, Cloud.statusText() || 'مفعّلة'),
+             h('div', { class: 'btnrow' }, h('button', { class: 'btn pri', onclick: async () => { if (Cloud.ready()) { await Cloud.sync(true); render(); } else Cloud.connectSheet(render); } }, Cloud.ready() ? 'مزامنة الآن' : 'استئناف'), h('button', { class: 'btn ghost', onclick: () => Cloud.disconnect(render) }, 'إيقاف')),
+             h('button', { class: 'btn danger ghost block', onclick: () => Cloud.deleteRemote(render) }, 'حذف النسخة السحابية')]));
     root.append(card('عن البرنامج', h('p', { class: 'mut' }, 'عمدة الحي — الإصدار التجريبي 1.0'), h('button', { class: 'btn danger ghost block', onclick: resetAll }, 'إعادة ضبط البرنامج (حذف كل البيانات)')));
   }
   function signSheet() {
@@ -111,29 +120,5 @@ const Settings = (() => {
       S.settings.pin = hashPin(cleanNum(o.n1)); await saveSettings(); sh.close(); render(); toast('تم تغيير الرمز'); } }, 'حفظ'));
   }
 
-  // ---------- النسخ الاحتياطي ----------
-  async function backup(withImages, share) {
-    try {
-      const imgs = withImages ? await DB.all('images') : [];
-      const st = { ...S.settings }; delete st.pin;
-      const data = { app: 'mayor-app', version: 1, exportedAt: new Date().toISOString(), withImages, settings: st, houses: S.houses, requests: S.requests, reports: S.reports, bounds: S.bounds, images: imgs };
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' }); const name = 'mayor-backup-' + todayISO() + '.json';
-      if (share) await shareFile(blob, name, 'نسخة احتياطية'); else downloadBlob(blob, name);
-      S.settings.lastBackup = Date.now(); await saveSettings(); render(); App.updateBanner();
-      toast('تم تجهيز النسخة الاحتياطية');
-    } catch (e) { console.error(e); toast('تعذر إنشاء النسخة الاحتياطية'); }
-  }
-  async function restore() {
-    const f = await pickFile('.json,application/json'); if (!f[0]) return;
-    try {
-      const j = JSON.parse(await f[0].text()); if (j.app !== 'mayor-app') { toast('هذا الملف ليس نسخة احتياطية من البرنامج'); return; }
-      const cnt = (j.houses || []).length + ' بيت، ' + (j.requests || []).length + ' طلب، ' + (j.reports || []).length + ' محضر';
-      if (!(await confirmBox('سيتم دمج النسخة (' + cnt + ') مع بياناتك الحالية. السجلات المتطابقة تُستبدل بما في النسخة. المتابعة؟', 'استعادة'))) return;
-      for (const [store, arr, key] of [['houses', S.houses, 'houses'], ['requests', S.requests, 'requests'], ['reports', S.reports, 'reports'], ['bounds', S.bounds, 'bounds']]) for (const rec of j[key] || []) await putRec(store, arr, rec);
-      for (const im of j.images || []) await DB.put('images', im);
-      const keep = S.settings.pin; Object.assign(S.settings, j.settings || {}, { pin: keep, wizardDone: true }); S.settings.lastBackup = Date.now(); await saveSettings();
-      applyPrefs(); MapUI.refresh(); MapUI.renderBounds(); MapUI.fitAll(); render(); toast('تمت الاستعادة بنجاح');
-    } catch (e) { console.error(e); toast('تعذر قراءة الملف. تأكد أنه نسخة احتياطية سليمة'); }
-  }
-  return { build, render, backupAge };
+  return { build, render };
 })();

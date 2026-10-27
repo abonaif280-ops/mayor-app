@@ -1,7 +1,7 @@
 // يعمل فقط عند الاستضافة على رابط آمن (https). يخزّن ملفات البرنامج ليفتح بدون إنترنت.
-const V = 'mayor-v3';
+const V = 'mayor-v4';
 const FILES = ['./','index.html','manifest.webmanifest','css/style.css','css/fonts.css',
-  'js/db.js','js/core.js','js/docx.js','js/map.js','js/requests.js','js/reports.js','js/district.js','js/home.js','js/settings.js','js/main.js',
+  'js/db.js','js/core.js','js/docx.js','js/map.js','js/requests.js','js/reports.js','js/district.js','js/home.js','js/config.js','js/backup.js','js/cloud.js','js/settings.js','js/main.js',
   'lib/leaflet/leaflet.js','lib/leaflet/leaflet.css','lib/jszip.min.js',
   'lib/leaflet/images/layers.png','lib/leaflet/images/layers-2x.png','lib/leaflet/images/marker-icon.png','lib/leaflet/images/marker-shadow.png',
   'fonts/tajawal-arabic-400-normal.woff2','fonts/tajawal-arabic-500-normal.woff2','fonts/tajawal-arabic-700-normal.woff2',

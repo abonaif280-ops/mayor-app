@@ -228,3 +228,10 @@ body.mapfs .shell.tab-map .nav{display:none}
 .mbanner{top:calc(8px + env(safe-area-inset-top))}
 .msearch::-webkit-search-cancel-button,.msearch::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
 .mapwrap .leaflet-bottom.leaflet-right{margin-bottom:6px}
+
+/* بطاقة النسخ الاحتياطي في الرئيسية */
+.bkcard{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:10px 12px;margin-bottom:14px}
+.bkcard.due{border-color:var(--amber);background:#fff8e6}[data-theme=night] .bkcard.due{background:#2e2410}
+.bkt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}.bkt b{font-size:.95rem}.bkt small{color:var(--mut);font-size:.8rem}.bkt small.cl{color:var(--pri);font-weight:700;cursor:pointer}
+.bkcard .btn{flex:none;min-height:46px;padding:0 14px}
+.bhint{display:block;color:var(--mut);margin:6px 0 10px;line-height:1.5}

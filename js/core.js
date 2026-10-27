@@ -5,7 +5,7 @@ const DEFAULTS = {
   logo: '', sig: '', pin: '', calendar: 'gregorian', startNo: 1, fontScale: 1, theme: 'light',
   reportFont: 'tajawal', tags: DEFAULT_TAGS.slice(), lastBackup: 0, firstUse: 0, wizardDone: false, tipShown: false,
 };
-const S = { settings: { ...DEFAULTS }, houses: [], requests: [], reports: [], bounds: [], tab: 'map', filter: 'all' };
+const S = { settings: { ...DEFAULTS }, houses: [], requests: [], reports: [], bounds: [], tomb: {}, tab: 'map', filter: 'all' };
 
 // ---------- بناء عناصر الواجهة ----------
 function h(tag, attrs, ...kids) {
@@ -267,12 +267,16 @@ function hashPin(p) { let a = 0xdeadbeef, b = 0x41c6ce57; for (let i = 0; i < p.
 async function loadSettings() { const s = await DB.getKV('settings'); S.settings = { ...DEFAULTS, tags: DEFAULT_TAGS.slice(), ...(s || {}) }; }
 const saveSettings = () => DB.setKV('settings', S.settings);
 async function loadAll() {
-  S.houses = await DB.all('houses'); S.requests = await DB.all('requests'); S.reports = await DB.all('reports'); S.bounds = await DB.all('bounds');
+  S.houses = await DB.all('houses'); S.requests = await DB.all('requests'); S.reports = await DB.all('reports'); S.bounds = await DB.all('bounds'); S.tomb = (await DB.getKV('tomb')) || {};
   // «إبلاغ بالحضور» دُمج مع «إبلاغ بالمراجعة»
   for (const x of S.requests) if (x.kind === 'attend') x.kind = 'review'; for (const x of S.reports) if (x.kind === 'attend') x.kind = 'review';
 }
-async function putRec(store, arr, rec) { await DB.put(store, rec); const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec); }
-async function delRec(store, arr, id) { await DB.del(store, id); const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1); }
+async function putRec(store, arr, rec) { rec.updated = Date.now(); await DB.put(store, rec); const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec); if (typeof Cloud !== 'undefined') Cloud.touch(); }
+async function delRec(store, arr, id) {
+  await DB.del(store, id); const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1);
+  S.tomb[store + ':' + id] = Date.now(); await DB.setKV('tomb', S.tomb); // شاهد حذف ليصل الحذف للأجهزة الأخرى عند الدمج
+  if (typeof Cloud !== 'undefined') Cloud.touch();
+}
 function applyPrefs() {
   document.documentElement.dataset.theme = S.settings.theme || 'light';
   document.documentElement.style.fontSize = (16 * (S.settings.fontScale || 1)) + 'px';
