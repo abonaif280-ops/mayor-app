@@ -163,7 +163,7 @@ const MapUI = (() => {
       ? h('div', { class: 'note red' }, h('b', {}, '⚠ ملاحظات'), h('p', {}, hs.notes))
       : h('div', { class: 'note green' }, 'بيانات فقط — لا توجد ملاحظات'));
     if ((hs.tags || []).length) b.append(h('div', { class: 'tagrow' }, hs.tags.map(t => h('span', { class: 'tag' }, t))));
-    b.append(row('عدد الأدوار', hs.floors), row('رقم الهوية', hs.nid), row('رقم العداد', hs.meter), row('العنوان الوطني', hs.address));
+    b.append(row('الحي', District.label(hs)), row('عدد الأدوار', hs.floors), row('رقم الهوية', hs.nid), row('رقم العداد', hs.meter), row('العنوان الوطني', hs.address));
     if (hs.phone) b.append(h('div', { class: 'kv' }, h('span', {}, 'رقم الجوال'), h('b', { dir: 'ltr' }, hs.phone),
       h('div', { class: 'act' }, h('a', { class: 'rbtn sm', href: telLink(hs.phone), title: 'اتصال' }, icon('phone', 20)), h('a', { class: 'rbtn sm wa', href: waLink(hs.phone), target: '_blank', rel: 'noopener', title: 'واتساب' }, icon('wa', 20)))));
     b.append(h('div', { class: 'kv' }, h('span', {}, 'الإحداثيات'), h('b', { dir: 'ltr' }, hs.lat + ', ' + hs.lng),
@@ -355,5 +355,5 @@ const MapUI = (() => {
     q.addEventListener('input', draw); sh.body.append(q, box); draw();
   }
 
-  return { build, show, refresh, openHouse, focusHouse, housePicker, renderBounds, fitAll };
+  return { build, show, refresh, openHouse, focusHouse, housePicker, renderBounds, fitAll, addHouse };
 })();

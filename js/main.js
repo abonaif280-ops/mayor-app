@@ -1,7 +1,8 @@
 // ============ التشغيل والتنقل والبحث ============
 const App = (() => {
   let banner, views = {}, hiddenAt = 0, searchQ = '', dismissed = false;
-  const NAV = [['map', 'الخريطة', 'map'], ['req', 'الطلبات', 'req'], ['rep', 'المحاضر', 'rep'], ['search', 'بحث', 'search'], ['set', 'الإعدادات', 'set']];
+  const NAV = [['home', 'الرئيسية', 'home'], ['map', 'الخريطة', 'map'], ['req', 'الطلبات', 'req'], ['rep', 'المحاضر', 'rep'], ['set', 'الإعدادات', 'set']];
+  const VIEWS = NAV.map(x => x[0]).concat('search');
 
   function updateBanner() {
     if (!banner) return; banner.innerHTML = ''; banner.classList.add('hidden'); if (dismissed) return;
@@ -47,18 +48,18 @@ const App = (() => {
       h('div', { class: 'tact' }, h('button', { class: 'rbtn sm', title: 'وضع الشمس / الليل', onclick: cyc }, '☀'), h('button', { class: 'rbtn sm', title: 'قفل البرنامج', onclick: () => lockScreen() }, '🔒')));
     banner = h('div', { id: 'topbanner', class: 'hidden' });
     const main = h('main', { class: 'views' });
-    NAV.forEach(([k]) => { views[k] = h('section', { class: 'view hidden', id: 'v-' + k }); main.append(views[k]); });
+    VIEWS.forEach(k => { views[k] = h('section', { class: 'view hidden', id: 'v-' + k }); main.append(views[k]); });
     const nav = h('nav', { class: 'nav' }, NAV.map(([k, l, ic]) => h('button', { 'data-t': k, onclick: () => switchTab(k) }, icon(ic, 24), h('span', {}, l), k === 'req' ? h('i', { class: 'nbadge hidden', id: 'nb-req' }) : null)));
     app.append(h('div', { class: 'shell' }, top, banner, main, nav));
-    Requests.build(views.req); Reports.build(views.rep); Settings.build(views.set);
-    switchTab('map'); MapUI.build(views.map); MapUI.show();
+    Requests.build(views.req); Reports.build(views.rep); Settings.build(views.set); Home.build(views.home);
+    switchTab('map'); MapUI.build(views.map); MapUI.show(); switchTab('home');
     updateBanner(); updateNavBadge();
   }
   function go(t) {
     S.tab = t;
-    NAV.forEach(([k]) => views[k].classList.toggle('hidden', k !== t));
-    document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-    if (t === 'map') MapUI.show(); else if (t === 'req') Requests.render(); else if (t === 'rep') Reports.render(); else if (t === 'search') renderSearch(); else if (t === 'set') Settings.render();
+    VIEWS.forEach(k => views[k].classList.toggle('hidden', k !== t));
+    document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.t === (t === 'search' ? 'home' : t)));
+    if (t === 'home') Home.render(); else if (t === 'map') MapUI.show(); else if (t === 'req') Requests.render(); else if (t === 'rep') Reports.render(); else if (t === 'search') renderSearch(); else if (t === 'set') Settings.render();
     updateNavBadge();
   }
   return { start, go, updateBanner, hiddenAt: v => { if (v !== undefined) hiddenAt = v; return hiddenAt; } };

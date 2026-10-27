@@ -48,6 +48,8 @@ const ICONS = {
   back: '<path d="m9 5 7 7-7 7"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
   edit: '<path d="m4 20 4-1 11-11-3-3L5 16zM14 6l3 3"/>',
+  home: '<path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  chart: '<path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/>',
 };
 const icon = (n, s = 22) => h('span', { class: 'ico', html: `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ''}</svg>` });
 
@@ -204,19 +206,59 @@ async function shareFile(blob, name, title) {
   downloadBlob(blob, name); toast('جهازك لا يدعم المشاركة المباشرة، تم تحميل الملف'); return false;
 }
 
-// ---------- التوقيع بالإصبع ----------
+// ---------- التوقيع بقلم حبر أزرق (سمك متغير حسب سرعة اليد) ----------
+const INK = [11, 47, 159]; // أزرق قلم الحبر
+const INK_CSS = 'rgb(11,47,159)';
 function sigPad() {
   const c = h('canvas', { class: 'sigcanvas', width: 700, height: 260 });
-  const x = c.getContext('2d'); x.lineWidth = 4; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#111';
-  let drawing = false, dirty = false;
+  const x = c.getContext('2d'); x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = INK_CSS; x.fillStyle = INK_CSS;
+  let drawing = false, dirty = false, pts = [], lastW = 3.2, lastT = 0;
   const pos = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
-  c.addEventListener('pointerdown', e => { drawing = true; dirty = true; c.setPointerCapture(e.pointerId); const [a, b] = pos(e); x.beginPath(); x.moveTo(a, b); x.lineTo(a + 0.1, b + 0.1); x.stroke(); e.preventDefault(); });
-  c.addEventListener('pointermove', e => { if (!drawing) return; const [a, b] = pos(e); x.lineTo(a, b); x.stroke(); e.preventDefault(); });
-  const end = () => { drawing = false; };
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  c.addEventListener('pointerdown', e => {
+    drawing = true; dirty = true; c.setPointerCapture(e.pointerId); const p = pos(e); pts = [p]; lastT = e.timeStamp; lastW = 3.2;
+    x.beginPath(); x.arc(p[0], p[1], 2, 0, 7); x.fill(); e.preventDefault();
+  });
+  c.addEventListener('pointermove', e => {
+    if (!drawing) return; const p = pos(e), q = pts[pts.length - 1];
+    const d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (d < 1.2) { e.preventDefault(); return; }
+    const dt = Math.max(1, e.timeStamp - lastT); lastT = e.timeStamp; const speed = d / dt; // بكسل لكل ملّي ثانية
+    let target = Math.max(1.4, Math.min(5.6, 5.8 - speed * 2.4)); // بطيء = أسمك، سريع = أرقّ
+    if (e.pointerType === 'pen' && e.pressure > 0) target = 1.4 + e.pressure * 4.6;
+    const w = lastW * 0.72 + target * 0.28; pts.push(p);
+    if (pts.length >= 3) {
+      const n = pts.length, m1 = mid(pts[n - 3], pts[n - 2]), m2 = mid(pts[n - 2], pts[n - 1]);
+      x.lineWidth = (lastW + w) / 2; x.beginPath(); x.moveTo(m1[0], m1[1]); x.quadraticCurveTo(pts[n - 2][0], pts[n - 2][1], m2[0], m2[1]); x.stroke();
+    } else { x.lineWidth = w; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(p[0], p[1]); x.stroke(); }
+    lastW = w; e.preventDefault();
+  });
+  const end = () => {
+    if (drawing && pts.length >= 2) { const n = pts.length, a = mid(pts[n - 2], pts[n - 1]), z = pts[n - 1]; x.lineWidth = Math.max(1.2, lastW * 0.6); x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(z[0], z[1]); x.stroke(); }
+    drawing = false; pts = [];
+  };
   c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
-  const el = h('div', { class: 'sigbox' }, c, h('div', { class: 'sigtools' }, h('button', { type: 'button', class: 'btn ghost sm', onclick: () => { x.clearRect(0, 0, c.width, c.height); dirty = false; } }, 'مسح')));
+  const el = h('div', { class: 'sigbox' }, c, h('div', { class: 'sigtools' }, h('small', { class: 'mut', style: { flex: 1 } }, 'قلم حبر أزرق: الخط يرقّ مع السرعة'), h('button', { type: 'button', class: 'btn ghost sm', onclick: () => { x.clearRect(0, 0, c.width, c.height); dirty = false; } }, 'مسح')));
   return { el, isEmpty: () => !dirty, data: () => c.toDataURL('image/png') };
 }
+// يحوّل أي توقيع (مرسوم بالأسود أو مصوّر على ورقة بيضاء) إلى حبر أزرق على خلفية شفافة
+function recolorBlue(dataUrl) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => {
+      const w = im.naturalWidth || im.width, hh = im.naturalHeight || im.height;
+      const c = document.createElement('canvas'); c.width = w; c.height = hh; const x = c.getContext('2d'); x.drawImage(im, 0, 0, w, hh);
+      const d = x.getImageData(0, 0, w, hh), a = d.data;
+      for (let i = 0; i < a.length; i += 4) {
+        const lum = 0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2];
+        const k = Math.max(0, Math.min(1, (245 - lum) / 150)); // أغمق = حبر أوضح
+        a[i] = INK[0]; a[i + 1] = INK[1]; a[i + 2] = INK[2]; a[i + 3] = Math.round(a[i + 3] * k);
+      }
+      x.putImageData(d, 0, 0); res(c.toDataURL('image/png'));
+    };
+    im.onerror = () => rej(new Error('img')); im.src = dataUrl;
+  });
+}
+const signatureFromFile = async file => recolorBlue(await normalizePng(file, 700));
 
 // ---------- الإعدادات والبيانات ----------
 function hashPin(p) { let a = 0xdeadbeef, b = 0x41c6ce57; for (let i = 0; i < p.length; i++) { const ch = p.charCodeAt(i); a = Math.imul(a ^ ch, 2654435761); b = Math.imul(b ^ ch, 1597334677); } a = Math.imul(a ^ (a >>> 16), 2246822507) ^ Math.imul(b ^ (b >>> 13), 3266489909); b = Math.imul(b ^ (b >>> 16), 2246822507) ^ Math.imul(a ^ (a >>> 13), 3266489909); return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36) + ':mayor'; }

@@ -200,5 +200,5 @@ const Reports = (() => {
   }
   function newFor(hs) { open_(null, { kind: 'review', person: hs.owner, nid: hs.nid || '', phone: hs.phone || '', houseId: hs.id }); }
 
-  return { build, render, open: open_, fromRequest, newFor, kindLabel };
+  return { build, render, open: open_, fromRequest, newFor, kindLabel, chooser };
 })();
