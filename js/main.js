@@ -8,7 +8,7 @@ const App = (() => {
     if (!banner) return; banner.innerHTML = ''; banner.classList.add('hidden'); if (dismissed) return;
     let msg = '', btn = null;
     if (S.settings.pin === hashPin(DEFAULT_PIN)) { msg = 'تنبيه: ما زلت تستخدم رمز الدخول الافتراضي. غيّره من الإعدادات.'; btn = ['الإعدادات', () => switchTab('set')]; }
-    else if (Backup.due()) { const p = Backup.pending(); msg = p ? 'لديك ' + p + ' تعديل لم يُحفظ في نسخة احتياطية.' : 'مضى وقت على آخر نسخة احتياطية.'; btn = ['احفظ نسخة', async () => { if (await Backup.quickSave(true)) updateBanner(); }]; }
+    else if (Backup.due()) { const p = Backup.pending(); msg = p ? 'لديك ' + p + ' تعديل لم يُحفظ في نسخة احتياطية.' : 'مضت 24 ساعة دون نسخة احتياطية.'; btn = ['احفظ نسخة', async () => { if (await Backup.quickSave(true)) updateBanner(); }]; }
     if (!msg) return;
     banner.classList.remove('hidden');
     banner.append(h('span', {}, msg), h('button', { class: 'btn sm pri', onclick: btn[1] }, btn[0]), h('button', { class: 'x', onclick: () => { dismissed = true; updateBanner(); } }, '✕'));
@@ -62,7 +62,7 @@ const App = (() => {
     if (t === 'home') Home.render(); else if (t === 'map') MapUI.show(); else if (t === 'req') Requests.render(); else if (t === 'rep') Reports.render(); else if (t === 'search') renderSearch(); else if (t === 'set') Settings.render();
     updateNavBadge();
   }
-  return { start, go, updateBanner, hiddenAt: v => { if (v !== undefined) hiddenAt = v; return hiddenAt; } };
+  return { start, go, updateBanner, remind: () => { dismissed = false; updateBanner(); }, hiddenAt: v => { if (v !== undefined) hiddenAt = v; return hiddenAt; } };
 })();
 function switchTab(t) { App.go(t); }
 
@@ -76,6 +76,7 @@ function switchTab(t) { App.go(t); }
   else lockScreen(() => App.start());
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) App.hiddenAt(Date.now());
+    else if (App.hiddenAt() && Date.now() - App.hiddenAt() > 1800000 && !$('.lock') && !$('.wiz')) { App.remind(); if (S.settings.pin && S.settings.wizardDone) lockScreen(); }
     else if (App.hiddenAt() && Date.now() - App.hiddenAt() > 120000 && !$('.lock') && !$('.wiz') && S.settings.pin && S.settings.wizardDone) lockScreen();
   });
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });

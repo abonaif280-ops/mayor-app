@@ -11,7 +11,9 @@ const Backup = (() => {
     Object.values(S.tomb || {}).forEach(t => { if (t > lb) n++; });
     return n;
   }
-  const due = () => { if (!hasData()) return false; const p = pending(); return p >= 10 || (age() >= 7 && (p > 0 || !S.settings.lastBackup)); };
+  const ageMs = () => { const t = S.settings.lastBackup || S.settings.firstUse; return t ? Date.now() - t : 0; };
+  // تذكير: مرّت 24 ساعة دون نسخة وهناك تعديلات (أو لم تُحفظ نسخة قط)، أو تراكمت 10 تعديلات
+  const due = () => { if (!hasData()) return false; const p = pending(); return p >= 10 || (ageMs() >= 86400000 && (p > 0 || !S.settings.lastBackup)); };
 
   async function snapshot(withImages) {
     const st = { ...S.settings }; delete st.pin; delete st.cloud; delete st.googleClientId;
