@@ -18,7 +18,7 @@ function lockScreen(onOk) {
   const key = e => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === 'Backspace') press('del'); };
   document.addEventListener('keydown', key);
   const pad = h('div', { class: 'ppad' }, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => h('button', { onclick: () => press(String(n)) }, n)), h('span', {}), h('button', { onclick: () => press('0') }, '0'), h('button', { onclick: () => press('del') }, '⌫'));
-  ov.append(h('div', { class: 'lockbox' }, h('div', { class: 'lockico' }, icon('pin', 40)), h('h2', {}, 'مساعد العمدةي'), h('p', { class: 'mut' }, S.settings.district ? 'حي ' + S.settings.district : ''), dots, msg, pad,
+  ov.append(h('div', { class: 'lockbox' }, h('div', { class: 'lockico' }, icon('pin', 40)), h('h2', {}, 'مساعد العمدة'), h('p', { class: 'mut' }, S.settings.district ? 'حي ' + S.settings.district : ''), dots, msg, pad,
     h('button', { class: 'lnk', onclick: forgotPin }, 'نسيت الرمز؟')));
   document.body.append(ov);
 }
